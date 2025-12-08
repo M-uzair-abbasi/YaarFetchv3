@@ -32,3 +32,19 @@ def order_to_public(order: Dict[str, Any]) -> Dict[str, Any]:
         "created_at": order.get("created_at"),
     }
 
+
+def offer_to_public(offer: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "id": object_id_to_str(offer.get("_id")),
+        "fetcher_id": object_id_to_str(offer.get("fetcher_id")),
+        "current_location": offer.get("current_location"),
+        "destination": offer.get("destination"),
+        "arrival_time": offer.get("arrival_time"),
+        "pickup_capability": offer.get("pickup_capability"),
+        "contact_number": offer.get("contact_number"),
+        "delivery_charge": offer.get("delivery_charge"),
+        "estimated_delivery_time": offer.get("estimated_delivery_time"),
+        "notes": offer.get("notes"),
+        "created_at": offer.get("created_at"),
+    }
+

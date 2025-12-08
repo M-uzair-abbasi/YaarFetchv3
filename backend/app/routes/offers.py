@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..dependencies import get_current_user, get_db
 from ..schemas import OfferCreate, OfferPublic
-from ..utils import order_to_public, to_object_id
+from ..utils import offer_to_public, to_object_id
 
 router = APIRouter()
 
@@ -25,7 +25,7 @@ async def create_offer(
         offer_doc["_id"] = result.inserted_id
         
         # Reuse order_to_public utility since it just converts _id to id and handles ObjectId
-        return OfferPublic(**order_to_public(offer_doc))
+        return OfferPublic(**offer_to_public(offer_doc))
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -40,7 +40,7 @@ async def list_offers(
         # Fetch recent offers, limited to 50 for now
         cursor = db.offers.find().sort("created_at", -1).limit(50)
         offers = await cursor.to_list(length=50)
-        return [OfferPublic(**order_to_public(offer)) for offer in offers]
+        return [OfferPublic(**offer_to_public(offer)) for offer in offers]
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
