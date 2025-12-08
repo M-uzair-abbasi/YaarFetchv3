@@ -28,6 +28,7 @@ def order_to_public(order: Dict[str, Any]) -> Dict[str, Any]:
         "instructions": order.get("instructions"),
         "requester_id": object_id_to_str(order.get("requester_id")),
         "fetcher_id": object_id_to_str(order["fetcher_id"]) if order.get("fetcher_id") else None,
+        "target_offer_id": object_id_to_str(order.get("target_offer_id")) if order.get("target_offer_id") else None,
         "status": order.get("status"),
         "created_at": order.get("created_at"),
     }
@@ -46,5 +47,16 @@ def offer_to_public(offer: Dict[str, Any]) -> Dict[str, Any]:
         "estimated_delivery_time": offer.get("estimated_delivery_time"),
         "notes": offer.get("notes"),
         "created_at": offer.get("created_at"),
+    }
+
+
+def chat_to_public(chat: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "id": object_id_to_str(chat.get("_id")),
+        "order_id": object_id_to_str(chat.get("order_id")),
+        "sender_id": object_id_to_str(chat.get("sender_id")),
+        "sender_name": chat.get("sender_name"),
+        "content": chat.get("content"),
+        "created_at": chat.get("created_at"),
     }
 

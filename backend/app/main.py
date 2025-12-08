@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routes import auth, orders, offers
+from .routes import auth, orders, offers, chat
 
 
 def create_app() -> FastAPI:
@@ -21,8 +21,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/auth", tags=["auth"])
     app.include_router(orders.router, prefix="/orders", tags=["orders"])
     app.include_router(offers.router, prefix="/offers", tags=["offers"])
-    app.include_router(orders.router, prefix="/orders", tags=["orders"])  # Keep existing for safety if needed, but actually we want to add offers
-    app.include_router(offers.router, prefix="/offers", tags=["offers"])
+    app.include_router(chat.router, prefix="/chat", tags=["chat"])
 
     return app
 

@@ -27,6 +27,7 @@ async def create_order(
             "instructions": payload.instructions.strip() if payload.instructions else None,
             "requester_id": to_object_id(current_user["id"]),
             "fetcher_id": None,
+            "target_offer_id": to_object_id(payload.target_offer_id) if payload.target_offer_id else None,
             "status": "open",
             "created_at": datetime.utcnow(),
         }
@@ -45,6 +46,7 @@ async def create_order(
 @router.get("", response_model=List[OrderPublic])
 async def list_orders(
     status_filter: Optional[str] = None,
+    target_offer_id: Optional[str] = None,
     db: AsyncIOMotorDatabase = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -56,6 +58,9 @@ async def list_orders(
                     status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status filter"
                 )
             query["status"] = status_filter
+        
+        if target_offer_id:
+            query["target_offer_id"] = to_object_id(target_offer_id)
 
         orders_cursor = db.orders.find(query).sort("created_at", -1)
         orders = await orders_cursor.to_list(length=100)

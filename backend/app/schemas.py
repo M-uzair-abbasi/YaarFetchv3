@@ -33,6 +33,7 @@ class OrderBase(BaseModel):
     item: str = Field(..., max_length=200)
     dropoff_location: str = Field(..., max_length=200)
     instructions: Optional[str] = Field(None, max_length=500)
+    target_offer_id: Optional[str] = None  # New field: link to a specific offer
 
 
 class OrderCreate(OrderBase):
@@ -47,6 +48,7 @@ class OrderPublic(OrderBase):
     id: str
     requester_id: str
     fetcher_id: Optional[str] = None
+    target_offer_id: Optional[str] = None
     status: str
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -70,6 +72,20 @@ class OfferCreate(OfferBase):
 class OfferPublic(OfferBase):
     id: str
     fetcher_id: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ChatCreate(BaseModel):
+    content: str = Field(..., max_length=1000)
+
+
+class ChatPublic(BaseModel):
+    id: str
+    order_id: str
+    sender_id: str
+    sender_name: str
+    content: str
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 

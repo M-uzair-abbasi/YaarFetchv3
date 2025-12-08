@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import clsx from "clsx";
+import ChatBox from "../components/ChatBox";
 
 function Card({ children, className }) {
     return (
@@ -30,18 +31,19 @@ function StatusPill({ status }) {
 
 export default function RequesterView({ client, user, setMessage }) {
     const [orders, setOrders] = useState([]);
+    const [offers, setOffers] = useState([]); // Active Fetchers
     const [loading, setLoading] = useState(false);
     const [orderForm, setOrderForm] = useState({
         item: "",
         dropoff_location: "",
         instructions: "",
+        target_offer_id: null, // For requesting specific fetcher
     });
+    const [selectedOffer, setSelectedOffer] = useState(null); // The offer we are about to request
 
     const fetchMyOrders = async () => {
         try {
             const { data } = await client.get("/orders");
-            // Filter client-side for now to show only my relevant orders (as requester)
-            // Ideally backend handles filtering, but reusing existing endpoint
             const myOrders = data.filter(o => o.requester_id === user.id);
             setOrders(myOrders);
         } catch (err) {
@@ -50,16 +52,38 @@ export default function RequesterView({ client, user, setMessage }) {
         }
     };
 
+    const fetchActiveOffers = async () => {
+        try {
+            const { data } = await client.get("/offers");
+            // Filter out my own offers if any
+            setOffers(data.filter(o => o.fetcher_id !== user.id));
+        } catch (err) {
+            console.error("Unable to list offers");
+        }
+    }
+
     useEffect(() => {
         fetchMyOrders();
+        fetchActiveOffers();
     }, []);
+
+    const handleRequestFetcher = (offer) => {
+        setSelectedOffer(offer);
+        setOrderForm({
+            ...orderForm,
+            target_offer_id: offer.id,
+            // Pre-fill dropoff if known? Maybe not.
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
 
     const handleCreateOrder = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
             await client.post("/orders", orderForm);
-            setOrderForm({ item: "", dropoff_location: "", instructions: "" });
+            setOrderForm({ item: "", dropoff_location: "", instructions: "", target_offer_id: null });
+            setSelectedOffer(null);
             setMessage("Request posted successfully", "success");
             fetchMyOrders();
         } catch (err) {
@@ -91,67 +115,107 @@ export default function RequesterView({ client, user, setMessage }) {
     ];
 
     return (
-        <div className="space-y-6">
-            <Card>
-                <h2 className="mb-3 text-lg font-semibold text-slate-900">
-                    Post a new request
-                </h2>
-                <form className="space-y-3" onSubmit={handleCreateOrder}>
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-slate-700">
-                            Item needed
-                        </label>
-                        <input
-                            required
-                            value={orderForm.item}
-                            onChange={(e) =>
-                                setOrderForm({ ...orderForm, item: e.target.value })
-                            }
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                            placeholder="Snacks, groceries, etc."
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-slate-700">
-                            Drop-off location
-                        </label>
-                        <input
-                            required
-                            value={orderForm.dropoff_location}
-                            onChange={(e) =>
-                                setOrderForm({
-                                    ...orderForm,
-                                    dropoff_location: e.target.value,
-                                })
-                            }
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                            placeholder="Gate, hostel, block..."
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium text-slate-700">
-                            Instructions (optional)
-                        </label>
-                        <textarea
-                            value={orderForm.instructions}
-                            onChange={(e) =>
-                                setOrderForm({ ...orderForm, instructions: e.target.value })
-                            }
-                            rows={2}
-                            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
-                            placeholder="Budget, brand, call on arrival..."
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                    >
-                        {loading ? "Posting..." : "Post request"}
-                    </button>
-                </form>
-            </Card>
+        <div className="grid gap-6 md:grid-cols-2 items-start">
+            {/* LEFT COLUMN: Create Request & Active Fetchers */}
+            <div className="space-y-6">
+                <Card className={clsx("border-2", selectedOffer ? "border-brand-500 ring-4 ring-brand-100" : "border-transparent")}>
+                    <h2 className="mb-3 text-lg font-semibold text-slate-900">
+                        {selectedOffer ? `Requesting delivery from Finder` : "Post a new request"}
+                        {/* Note: We don't have fetcher name in OfferPublic yet, would ideally add it */}
+                    </h2>
+                    {selectedOffer && (
+                        <div className="mb-4 rounded-xl bg-brand-50 p-3 text-sm text-brand-900">
+                            <span className="font-bold">Targeting Offer:</span> {selectedOffer.current_location} &rarr; {selectedOffer.destination}
+                            <button onClick={() => { setSelectedOffer(null); setOrderForm({ ...orderForm, target_offer_id: null }) }} className="block mt-1 text-xs underline text-brand-700">Cancel specific request</button>
+                        </div>
+                    )}
 
+                    <form className="space-y-3" onSubmit={handleCreateOrder}>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-slate-700">
+                                Item needed
+                            </label>
+                            <input
+                                required
+                                value={orderForm.item}
+                                onChange={(e) =>
+                                    setOrderForm({ ...orderForm, item: e.target.value })
+                                }
+                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                                placeholder="Snacks, groceries, etc."
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-slate-700">
+                                Drop-off location
+                            </label>
+                            <input
+                                required
+                                value={orderForm.dropoff_location}
+                                onChange={(e) =>
+                                    setOrderForm({
+                                        ...orderForm,
+                                        dropoff_location: e.target.value,
+                                    })
+                                }
+                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                                placeholder="Gate, hostel, block..."
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-slate-700">
+                                Instructions (optional)
+                            </label>
+                            <textarea
+                                value={orderForm.instructions}
+                                onChange={(e) =>
+                                    setOrderForm({ ...orderForm, instructions: e.target.value })
+                                }
+                                rows={2}
+                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                                placeholder="Budget, brand, call on arrival..."
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                        >
+                            {loading ? "Posting..." : selectedOffer ? "Send Request to Fetcher" : "Post to Public Feed"}
+                        </button>
+                    </form>
+                </Card>
+
+                {/* Active Fetchers List */}
+                <div>
+                    <h2 className="mb-3 text-lg font-semibold text-slate-900">Active Fetchers Nearby</h2>
+                    <div className="space-y-3">
+                        {offers.length === 0 && <p className="text-slate-400 text-sm">No active fetchers right now.</p>}
+                        {offers.map(offer => (
+                            <div key={offer.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition">
+                                <div className="mb-2">
+                                    <span className="text-xs font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Available Now</span>
+                                </div>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="font-bold text-slate-900">{offer.current_location} &rarr; {offer.destination}</p>
+                                        <p className="text-sm text-slate-600">Arrives: {offer.arrival_time}</p>
+                                        <p className="text-xs text-slate-500 mt-1">{offer.pickup_capability}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => handleRequestFetcher(offer)}
+                                        className="rounded-lg bg-slate-900 px-3 py-1 text-xs font-bold text-white hover:bg-slate-700"
+                                    >
+                                        Request
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* RIGHT COLUMN: My Orders */}
             <div>
                 <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-slate-900">My Requests</h2>
@@ -162,7 +226,7 @@ export default function RequesterView({ client, user, setMessage }) {
                     <p className="text-slate-500 text-sm">You haven't posted any requests yet.</p>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {orders.map((order) => (
                         <div
                             key={order.id}
@@ -170,6 +234,11 @@ export default function RequesterView({ client, user, setMessage }) {
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div>
+                                    {order.target_offer_id && (
+                                        <span className="mb-1 block text-[10px] font-bold uppercase text-brand-600">
+                                            Direct Request
+                                        </span>
+                                    )}
                                     <h3 className="text-base font-semibold text-slate-900">
                                         {order.item}
                                     </h3>
@@ -199,6 +268,11 @@ export default function RequesterView({ client, user, setMessage }) {
                                     </button>
                                 ))}
                             </div>
+
+                            {/* Chat Integration */}
+                            {(order.status === "accepted" || order.status === "picked_up") && (
+                                <ChatBox orderId={order.id} client={client} user={user} />
+                            )}
                         </div>
                     ))}
                 </div>
