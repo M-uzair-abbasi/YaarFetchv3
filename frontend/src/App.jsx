@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import clsx from "clsx";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+// Prefer production URL, then legacy base, then localhost for dev
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE ||
+  "http://localhost:8000";
 const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
   { value: "accepted", label: "Accepted" },
@@ -74,7 +78,12 @@ export default function App() {
     () =>
       axios.create({
         baseURL: API_BASE,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            }
+          : { "Content-Type": "application/json" },
       }),
     [token]
   );
