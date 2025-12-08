@@ -2,7 +2,8 @@ fastapi
 uvicorn
 motor
 python-jose[cryptography]
-passlib[bcrypt==4.0.1]
+passlib
+bcrypt==4.0.1
 python-multipart
 email-validator
 
