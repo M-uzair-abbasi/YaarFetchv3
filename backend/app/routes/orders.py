@@ -119,40 +119,39 @@ async def list_orders(
 ):
     try:
         query = {}
+        
+        # Determine the user ID for targeting checks
+        current_uid_obj = to_object_id(current_user["id"])
+
         if status_filter:
             if status_filter not in VALID_STATUSES:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid status filter"
                 )
-            query["status"] = status_filter
+            
+            if status_filter == "open":
+                # STRICT VISIBILITY LOGIC for Open Orders:
+                # 1. Start with status = open
+                # 2. Exclude own orders (Requester != Current User)
+                # 3. Targeted Visibility: 
+                #    (Target == Current User) OR (Target is None/Missing)
+                
+                query = {
+                    "$and": [
+                        {"status": "open"},
+                        {"requester_id": {"$ne": current_uid_obj}},
+                        {"$or": [
+                            {"target_fetcher_id": current_uid_obj},
+                            {"target_fetcher_id": None},
+                            {"target_fetcher_id": {"$exists": False}}
+                        ]}
+                    ]
+                }
+            else:
+                # For other statuses (e.g. accepted), we generally filter by participant in enrich_orders
+                # or here if needed. For now, basic status filter.
+                query["status"] = status_filter
         
-        # Task 1: Self-Exclusion - if status_filter is open, exclude my own orders
-        if status_filter == "open":
-            query["requester_id"] = {"$ne": to_object_id(current_user["id"])}
-        
-        # Task 2: Targeted Visibility
-        # If I am viewing open orders:
-        # - Show orders targeted to ME
-        # - Show public orders (target_fetcher_id is None)
-        # - HIDE orders targeted to OTHERS
-        # Logic: (target_fetcher_id == current_user_id) OR (target_fetcher_id == None)
-        
-        # Note: If target_offer_id is provided in params, we trust the client filter, 
-        # but we should still respect visibility rules.
-        
-        if status_filter == "open":
-            cid = to_object_id(current_user["id"])
-            # We already have requester_id != cid from above.
-            # Adding OR condition for targeting
-            query["$and"] = [
-                {"requester_id": {"$ne": cid}}, # Double check
-                {"$or": [
-                    {"target_fetcher_id": cid},
-                    {"target_fetcher_id": None},
-                    {"target_fetcher_id": {"$exists": False}}
-                ]}
-            ]
-
         if target_offer_id:
             query["target_offer_id"] = to_object_id(target_offer_id)
 
