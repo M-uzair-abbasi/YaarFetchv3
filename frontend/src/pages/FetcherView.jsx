@@ -47,8 +47,9 @@ export default function FetcherView({ client, user, setMessage }) {
             const allRes = await client.get("/orders"); // To get assigned tasks
 
             // Combine and Dedup: Open orders OR orders assigned to me
+            // Filter out my own requests (failsafe)
             const relevant = allRes.data.filter(o =>
-                o.status === "open" ||
+                (o.status === "open" && o.requester_id !== user.id) ||
                 o.fetcher_id === user.id
             );
 
@@ -175,7 +176,7 @@ export default function FetcherView({ client, user, setMessage }) {
             {/* TASKS LIST */}
             <div>
                 <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-slate-900">Task Board</h2>
+                    <h2 className="text-xl font-bold text-slate-900">Task Board (Deliveries)</h2>
                     <button onClick={fetchOrders} className="text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900">Refresh Board</button>
                 </div>
 

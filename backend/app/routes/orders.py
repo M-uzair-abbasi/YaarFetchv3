@@ -92,6 +92,7 @@ async def create_order(
             "requester_id": to_object_id(current_user["id"]),
             "fetcher_id": None,
             "target_offer_id": to_object_id(payload.target_offer_id) if payload.target_offer_id else None,
+            "target_fetcher_id": to_object_id(payload.target_fetcher_id) if payload.target_fetcher_id else None,
             "status": "open",
             "created_at": datetime.utcnow(),
         }
@@ -125,6 +126,33 @@ async def list_orders(
                 )
             query["status"] = status_filter
         
+        # Task 1: Self-Exclusion - if status_filter is open, exclude my own orders
+        if status_filter == "open":
+            query["requester_id"] = {"$ne": to_object_id(current_user["id"])}
+        
+        # Task 2: Targeted Visibility
+        # If I am viewing open orders:
+        # - Show orders targeted to ME
+        # - Show public orders (target_fetcher_id is None)
+        # - HIDE orders targeted to OTHERS
+        # Logic: (target_fetcher_id == current_user_id) OR (target_fetcher_id == None)
+        
+        # Note: If target_offer_id is provided in params, we trust the client filter, 
+        # but we should still respect visibility rules.
+        
+        if status_filter == "open":
+            cid = to_object_id(current_user["id"])
+            # We already have requester_id != cid from above.
+            # Adding OR condition for targeting
+            query["$and"] = [
+                {"requester_id": {"$ne": cid}}, # Double check
+                {"$or": [
+                    {"target_fetcher_id": cid},
+                    {"target_fetcher_id": None},
+                    {"target_fetcher_id": {"$exists": False}}
+                ]}
+            ]
+
         if target_offer_id:
             query["target_offer_id"] = to_object_id(target_offer_id)
 
@@ -192,13 +220,18 @@ async def update_status(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
             )
 
-        # Only requester or fetcher can change status
-        requester_id = object_id_to_str(order["requester_id"])
+        # Task 3: Restrict Status Changes
+        # Only the assigned fetcher can update status (to picked_up, delivered)
+        # Requester CANNOT change status (unless perhaps cancelling, but that is not in this scope).
+        # We assume this endpoint is for progressing the order.
+        
         fetcher_id = object_id_to_str(order["fetcher_id"]) if order.get("fetcher_id") else None
-        if current_user["id"] not in {requester_id, fetcher_id}:
-            raise HTTPException(
+        
+        # If the order is accepted, only the fetcher can move it forward.
+        if current_user["id"] != fetcher_id:
+             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not allowed to update this order",
+                detail="Only the assigned fetcher can update the status",
             )
 
         updated = await db.orders.find_one_and_update(

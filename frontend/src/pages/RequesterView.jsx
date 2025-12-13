@@ -79,7 +79,11 @@ export default function RequesterView({ client, user, setMessage }) {
         e.preventDefault();
         setLoading(true);
         try {
-            await client.post("/orders", orderForm);
+            const payload = {
+                ...orderForm,
+                target_fetcher_id: selectedOffer ? selectedOffer.fetcher_id : null
+            };
+            await client.post("/orders", payload);
             setOrderForm({ item: "", dropoff_location: "", instructions: "", target_offer_id: null });
             setSelectedOffer(null);
             setMessage("Request posted successfully", "success");
