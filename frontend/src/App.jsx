@@ -79,6 +79,23 @@ function AuthScreen({ setAuthMode, authMode, authForm, setAuthForm, handleAuthSu
               />
             </div>
           )}
+          {authMode === "register" && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                Phone Number
+              </label>
+              <input
+                required
+                type="tel"
+                value={authForm.phone_number}
+                onChange={(e) =>
+                  setAuthForm({ ...authForm, phone_number: e.target.value })
+                }
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium focus:border-slate-900 focus:bg-white focus:outline-none"
+                placeholder="0300-1234567"
+              />
+            </div>
+          )}
           <div className="space-y-1">
             <label className="text-xs font-bold uppercase tracking-wide text-slate-400">
               Email
@@ -132,12 +149,22 @@ export default function App() {
   const [authForm, setAuthForm] = useState({
     name: "",
     email: "",
+    phone_number: "",
     password: "",
   });
   const [token, setToken] = useState("");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ message: "", tone: "info" });
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   const client = useMemo(
     () =>
@@ -174,6 +201,8 @@ export default function App() {
       });
       setToken(data.access_token);
       setUser(data.user);
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
       setMessage(
         authMode === "login" ? "Welcome back!" : "Account created.",
         "success"

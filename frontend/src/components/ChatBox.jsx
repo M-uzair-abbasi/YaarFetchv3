@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import clsx from "clsx";
 
-export default function ChatBox({ orderId, client, user }) {
+export default function ChatBox({ orderId, client, user, otherUserName }) {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(false);
@@ -48,7 +48,7 @@ export default function ChatBox({ orderId, client, user }) {
         <div className="mt-4 flex h-64 flex-col rounded-xl border border-slate-200 bg-slate-50">
             <div className="border-b border-slate-200 px-4 py-2 bg-white rounded-t-xl">
                 <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Chat with {user.name}
+                    Chat with {otherUserName || "User"}
                 </h3>
             </div>
 

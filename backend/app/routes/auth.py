@@ -23,6 +23,7 @@ async def register_user(payload: UserCreate, db: AsyncIOMotorDatabase = Depends(
         user_doc = {
             "name": payload.name.strip(),
             "email": payload.email.lower().strip(),
+            "phone_number": payload.phone_number.strip(),
             "password": get_password_hash(payload.password),
             "created_at": datetime.utcnow(),
         }

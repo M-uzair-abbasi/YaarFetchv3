@@ -11,6 +11,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)
+    phone_number: str = Field(..., min_length=10, max_length=20)
 
 
 class UserLogin(BaseModel):
@@ -47,7 +48,11 @@ class OrderStatusUpdate(BaseModel):
 class OrderPublic(OrderBase):
     id: str
     requester_id: str
+    requester_name: Optional[str] = None
+    requester_contact: Optional[str] = None
     fetcher_id: Optional[str] = None
+    fetcher_name: Optional[str] = None
+    fetcher_contact: Optional[str] = None
     target_offer_id: Optional[str] = None
     status: str
     created_at: datetime
@@ -67,6 +72,17 @@ class OfferBase(BaseModel):
 
 class OfferCreate(OfferBase):
     pass
+
+
+class OfferUpdate(BaseModel):
+    current_location: Optional[str] = Field(None, max_length=100)
+    destination: Optional[str] = Field(None, max_length=100)
+    arrival_time: Optional[str] = Field(None, max_length=50)
+    pickup_capability: Optional[str] = Field(None, max_length=200)
+    contact_number: Optional[str] = Field(None, max_length=20)
+    delivery_charge: Optional[float] = None
+    estimated_delivery_time: Optional[str] = Field(None, max_length=50)
+    notes: Optional[str] = Field(None, max_length=500)
 
 
 class OfferPublic(OfferBase):

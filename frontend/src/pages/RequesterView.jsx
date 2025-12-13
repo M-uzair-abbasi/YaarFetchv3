@@ -31,15 +31,15 @@ function StatusPill({ status }) {
 
 export default function RequesterView({ client, user, setMessage }) {
     const [orders, setOrders] = useState([]);
-    const [offers, setOffers] = useState([]); // Active Fetchers
+    const [offers, setOffers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [orderForm, setOrderForm] = useState({
         item: "",
         dropoff_location: "",
         instructions: "",
-        target_offer_id: null, // For requesting specific fetcher
+        target_offer_id: null,
     });
-    const [selectedOffer, setSelectedOffer] = useState(null); // The offer we are about to request
+    const [selectedOffer, setSelectedOffer] = useState(null);
 
     const fetchMyOrders = async () => {
         try {
@@ -55,7 +55,6 @@ export default function RequesterView({ client, user, setMessage }) {
     const fetchActiveOffers = async () => {
         try {
             const { data } = await client.get("/offers");
-            // Filter out my own offers if any
             setOffers(data.filter(o => o.fetcher_id !== user.id));
         } catch (err) {
             console.error("Unable to list offers");
@@ -72,7 +71,6 @@ export default function RequesterView({ client, user, setMessage }) {
         setOrderForm({
             ...orderForm,
             target_offer_id: offer.id,
-            // Pre-fill dropoff if known? Maybe not.
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -115,24 +113,28 @@ export default function RequesterView({ client, user, setMessage }) {
     ];
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 items-start">
+        <div className="grid gap-8 md:grid-cols-2 items-start">
             {/* LEFT COLUMN: Create Request & Active Fetchers */}
-            <div className="space-y-6">
-                <Card className={clsx("border-2", selectedOffer ? "border-brand-500 ring-4 ring-brand-100" : "border-transparent")}>
-                    <h2 className="mb-3 text-lg font-semibold text-slate-900">
+            <div className="space-y-8">
+                <Card className={clsx("border-2 shadow-lg", selectedOffer ? "border-brand-500 ring-4 ring-brand-100" : "border-transparent")}>
+                    <h2 className="mb-4 text-xl font-bold text-slate-900">
                         {selectedOffer ? `Requesting delivery from Finder` : "Post a new request"}
-                        {/* Note: We don't have fetcher name in OfferPublic yet, would ideally add it */}
                     </h2>
                     {selectedOffer && (
-                        <div className="mb-4 rounded-xl bg-brand-50 p-3 text-sm text-brand-900">
-                            <span className="font-bold">Targeting Offer:</span> {selectedOffer.current_location} &rarr; {selectedOffer.destination}
-                            <button onClick={() => { setSelectedOffer(null); setOrderForm({ ...orderForm, target_offer_id: null }) }} className="block mt-1 text-xs underline text-brand-700">Cancel specific request</button>
+                        <div className="mb-6 rounded-xl bg-brand-50 p-4 text-sm text-brand-900 border border-brand-100">
+                            <div className="font-bold mb-1">Targeting Offer:</div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono bg-white px-2 py-0.5 rounded border border-brand-200">{selectedOffer.current_location}</span>
+                                <span>&rarr;</span>
+                                <span className="font-mono bg-white px-2 py-0.5 rounded border border-brand-200">{selectedOffer.destination}</span>
+                            </div>
+                            <button onClick={() => { setSelectedOffer(null); setOrderForm({ ...orderForm, target_offer_id: null }) }} className="block mt-3 text-xs font-bold underline text-brand-700 hover:text-brand-900">Cancel specific request</button>
                         </div>
                     )}
 
-                    <form className="space-y-3" onSubmit={handleCreateOrder}>
+                    <form className="space-y-4" onSubmit={handleCreateOrder}>
                         <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
                                 Item needed
                             </label>
                             <input
@@ -141,12 +143,12 @@ export default function RequesterView({ client, user, setMessage }) {
                                 onChange={(e) =>
                                     setOrderForm({ ...orderForm, item: e.target.value })
                                 }
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-brand-500 focus:bg-white focus:outline-none transition"
                                 placeholder="Snacks, groceries, etc."
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
                                 Drop-off location
                             </label>
                             <input
@@ -158,12 +160,12 @@ export default function RequesterView({ client, user, setMessage }) {
                                         dropoff_location: e.target.value,
                                     })
                                 }
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-brand-500 focus:bg-white focus:outline-none transition"
                                 placeholder="Gate, hostel, block..."
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-700">
+                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
                                 Instructions (optional)
                             </label>
                             <textarea
@@ -171,15 +173,15 @@ export default function RequesterView({ client, user, setMessage }) {
                                 onChange={(e) =>
                                     setOrderForm({ ...orderForm, instructions: e.target.value })
                                 }
-                                rows={2}
-                                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                                rows={3}
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-brand-500 focus:bg-white focus:outline-none transition"
                                 placeholder="Budget, brand, call on arrival..."
                             />
                         </div>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                            className="w-full rounded-xl bg-slate-900 py-4 text-sm font-bold text-white shadow-lg transition hover:bg-slate-800 hover:shadow-xl active:translate-y-0.5"
                         >
                             {loading ? "Posting..." : selectedOffer ? "Send Request to Fetcher" : "Post to Public Feed"}
                         </button>
@@ -188,23 +190,27 @@ export default function RequesterView({ client, user, setMessage }) {
 
                 {/* Active Fetchers List */}
                 <div>
-                    <h2 className="mb-3 text-lg font-semibold text-slate-900">Active Fetchers Nearby</h2>
-                    <div className="space-y-3">
-                        {offers.length === 0 && <p className="text-slate-400 text-sm">No active fetchers right now.</p>}
+                    <h2 className="mb-4 text-xl font-bold text-slate-900">Active Fetchers Nearby</h2>
+                    <div className="space-y-4">
+                        {offers.length === 0 && (
+                            <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center text-slate-400">
+                                No active fetchers right now.
+                            </div>
+                        )}
                         {offers.map(offer => (
-                            <div key={offer.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition">
-                                <div className="mb-2">
-                                    <span className="text-xs font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Available Now</span>
+                            <div key={offer.id} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition cursor-default">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">Available Now</span>
+                                    <span className="text-xs font-bold text-slate-400">{offer.arrival_time}</span>
                                 </div>
-                                <div className="flex justify-between items-start">
+                                <div className="flex justify-between items-end">
                                     <div>
-                                        <p className="font-bold text-slate-900">{offer.current_location} &rarr; {offer.destination}</p>
-                                        <p className="text-sm text-slate-600">Arrives: {offer.arrival_time}</p>
-                                        <p className="text-xs text-slate-500 mt-1">{offer.pickup_capability}</p>
+                                        <div className="font-bold text-slate-900 text-lg mb-1">{offer.current_location} &rarr; {offer.destination}</div>
+                                        <p className="text-xs text-slate-500 font-medium">{offer.pickup_capability}</p>
                                     </div>
                                     <button
                                         onClick={() => handleRequestFetcher(offer)}
-                                        className="rounded-lg bg-slate-900 px-3 py-1 text-xs font-bold text-white hover:bg-slate-700"
+                                        className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow transition hover:bg-slate-700 hover:scale-105 active:scale-95"
                                     >
                                         Request
                                     </button>
@@ -218,38 +224,60 @@ export default function RequesterView({ client, user, setMessage }) {
             {/* RIGHT COLUMN: My Orders */}
             <div>
                 <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900">My Requests</h2>
-                    <button onClick={fetchMyOrders} className="text-xs font-semibold text-slate-600 hover:text-slate-900">Refresh</button>
+                    <h2 className="text-xl font-bold text-slate-900">My Requests</h2>
+                    <button onClick={fetchMyOrders} className="text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900">Refresh</button>
                 </div>
 
                 {orders.length === 0 && (
-                    <p className="text-slate-500 text-sm">You haven't posted any requests yet.</p>
+                    <div className="rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center text-slate-400">
+                        You haven't posted any requests yet.
+                    </div>
                 )}
 
                 <div className="space-y-4">
                     {orders.map((order) => (
                         <div
                             key={order.id}
-                            className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                            className={clsx("flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:shadow-md",
+                                order.status === "open" ? "bg-white" : "bg-slate-50/50"
+                            )}
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     {order.target_offer_id && (
-                                        <span className="mb-1 block text-[10px] font-bold uppercase text-brand-600">
+                                        <span className="mb-2 inline-block rounded-md bg-brand-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-800">
                                             Direct Request
                                         </span>
                                     )}
-                                    <h3 className="text-base font-semibold text-slate-900">
+                                    <h3 className="text-lg font-bold text-slate-900">
                                         {order.item}
                                     </h3>
                                     <p className="text-sm text-slate-500">
-                                        {order.dropoff_location}
+                                        To: <span className="font-medium text-slate-700">{order.dropoff_location}</span>
                                     </p>
+
+                                    {/* Fetcher Info Display - SHOW CONTACT HERE IF ACCEPTED */}
+                                    {order.fetcher_id && (
+                                        <div className="mt-4 rounded-xl bg-emerald-50/50 border border-emerald-100 p-3">
+                                            <div className="text-[10px] font-bold uppercase tracking-wide text-emerald-600 mb-1">Assigned Fetcher</div>
+                                            <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                                                <div className="h-6 w-6 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center text-[10px]">
+                                                    {(order.fetcher_name || "F")[0]}
+                                                </div>
+                                                {order.fetcher_name || "Fetcher"}
+                                            </div>
+                                            {order.fetcher_contact && (
+                                                <div className="mt-2 text-sm font-mono text-slate-600 bg-white px-2 py-1 rounded border border-emerald-100 inline-block">
+                                                    📞 {order.fetcher_contact}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <StatusPill status={order.status} />
                             </div>
 
-                            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-50 mt-1">
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 mt-1">
                                 {STATUS_OPTIONS.map((opt) => (
                                     <button
                                         key={opt.value}
@@ -258,10 +286,10 @@ export default function RequesterView({ client, user, setMessage }) {
                                             handleStatusUpdate(order.id, opt.value)
                                         }
                                         className={clsx(
-                                            "rounded-xl px-2 py-1 text-[10px] font-semibold transition border",
+                                            "rounded-xl px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide transition border",
                                             order.status === opt.value
-                                                ? "bg-slate-100 text-slate-700 border-transparent"
-                                                : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                                                ? "bg-slate-200 text-slate-500 border-transparent cursor-not-allowed"
+                                                : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
                                         )}
                                     >
                                         {opt.label}
@@ -271,7 +299,12 @@ export default function RequesterView({ client, user, setMessage }) {
 
                             {/* Chat Integration */}
                             {(order.status === "accepted" || order.status === "picked_up") && (
-                                <ChatBox orderId={order.id} client={client} user={user} />
+                                <ChatBox
+                                    orderId={order.id}
+                                    client={client}
+                                    user={user}
+                                    otherUserName={order.fetcher_name}
+                                />
                             )}
                         </div>
                     ))}

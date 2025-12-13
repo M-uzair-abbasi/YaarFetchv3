@@ -1,17 +1,18 @@
 import { useState } from "react";
 import clsx from "clsx";
 
-export default function OfferForm({ client, onClose, onSuccess }) {
+export default function OfferForm({ client, onClose, onSuccess, initialData = null }) {
+    const isEditMode = !!initialData;
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        current_location: "",
-        destination: "",
-        arrival_time: "",
-        pickup_capability: "",
-        contact_number: "",
-        estimated_delivery_time: "",
-        delivery_charge: "",
-        notes: "",
+        current_location: initialData?.current_location || "",
+        destination: initialData?.destination || "",
+        arrival_time: initialData?.arrival_time || "",
+        pickup_capability: initialData?.pickup_capability || "",
+        contact_number: initialData?.contact_number || "",
+        estimated_delivery_time: initialData?.estimated_delivery_time || "",
+        delivery_charge: initialData?.delivery_charge || "",
+        notes: initialData?.notes || "",
     });
 
     const handleSubmit = async (e) => {
@@ -23,12 +24,18 @@ export default function OfferForm({ client, onClose, onSuccess }) {
                 ...formData,
                 delivery_charge: formData.delivery_charge ? Number(formData.delivery_charge) : null,
             };
-            await client.post("/offers", payload);
+
+            if (isEditMode) {
+                await client.patch(`/offers/${initialData.id}`, payload);
+            } else {
+                await client.post("/offers", payload);
+            }
+
             onSuccess?.();
             onClose?.();
         } catch (err) {
             console.error(err);
-            alert("Failed to post offer: " + (err.response?.data?.detail || err.message));
+            alert(`Failed to ${isEditMode ? "update" : "post"} offer: ` + (err.response?.data?.detail || err.message));
         } finally {
             setLoading(false);
         }
@@ -38,7 +45,7 @@ export default function OfferForm({ client, onClose, onSuccess }) {
         <div className="fixed inset-0 min-h-screen z-50 flex items-center justify-center bg-black/50 p-4">
             <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
                 <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-slate-900">Post Delivery Offer</h2>
+                    <h2 className="text-xl font-bold text-slate-900">{isEditMode ? "Edit Offer" : "Post Delivery Offer"}</h2>
                     <button
                         onClick={onClose}
                         className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600 hover:bg-slate-200"
@@ -48,6 +55,11 @@ export default function OfferForm({ client, onClose, onSuccess }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* ... (inputs remain same, state is handled) ... */}
+                    {/* Only showing the button change here since inputs bind to state which is already handled */}
+                    {/* Wait, replace_file_content replaces a contiguous block. I need to include the inputs if I use a large range. */}
+                    {/* Minimizing range. */}
+
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>
                             <label className="block text-sm font-medium text-slate-700">Current Location</label>
@@ -144,7 +156,7 @@ export default function OfferForm({ client, onClose, onSuccess }) {
                         disabled={loading}
                         className="w-full rounded-xl bg-slate-900 py-3 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
                     >
-                        {loading ? "Posting..." : "Post Offer"}
+                        {loading ? "Working..." : isEditMode ? "Save Changes" : "Post Offer"}
                     </button>
                 </form>
             </div>
