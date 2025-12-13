@@ -35,6 +35,7 @@ class OrderBase(BaseModel):
     dropoff_location: str = Field(..., max_length=200)
     instructions: Optional[str] = Field(None, max_length=500)
     target_offer_id: Optional[str] = None  # New field: link to a specific offer
+    target_fetcher_id: Optional[str] = None # New field: link to a specific fetcher
 
 
 class OrderCreate(OrderBase):
