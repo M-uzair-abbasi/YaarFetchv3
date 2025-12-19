@@ -31,6 +31,17 @@ def order_to_public(order: Dict[str, Any]) -> Dict[str, Any]:
         "target_offer_id": object_id_to_str(order.get("target_offer_id")) if order.get("target_offer_id") else None,
         "status": order.get("status"),
         "created_at": order.get("created_at"),
+        
+        "payment_sent": order.get("payment_sent", False),
+        "txn_id": order.get("txn_id"),
+        "paid_to_platform": order.get("paid_to_platform", False),
+        
+        "fetcher_bank_name": order.get("fetcher_bank_name"),
+        "fetcher_account_number": order.get("fetcher_account_number"),
+        "fetcher_account_title": order.get("fetcher_account_title"),
+        "payout_status": order.get("payout_status"),
+        "platform_fee": order.get("platform_fee"),
+        "fetcher_paid_amount": order.get("fetcher_paid_amount"),
     }
 
 
