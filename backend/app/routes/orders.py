@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ReturnDocument
 
 from ..dependencies import get_current_user, get_db
-from ..schemas import OrderCreate, OrderPublic, OrderStatusUpdate, PaymentSubmission, PayoutDetailsSubmission
+from ..schemas import OrderCreate, OrderPublic, OrderStatusUpdate, PaymentSubmission, PayoutDetailsSubmission, PayoutConfirmation
 from ..utils import object_id_to_str, order_to_public, to_object_id
 
 router = APIRouter()
@@ -342,3 +342,43 @@ async def submit_payout_details(
         ) from exc
 
 
+
+@router.put("/{order_id}/confirm-payout", response_model=OrderPublic)
+async def confirm_payout(
+    order_id: str,
+    payload: PayoutConfirmation,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        oid = to_object_id(order_id)
+        order = await db.orders.find_one({"_id": oid})
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
+            )
+
+        # Basic logic: 75% to fetcher, 25% to platform
+        total = payload.total_amount
+        fetcher_share = total * 0.75
+        platform_share = total * 0.25
+
+        updated = await db.orders.find_one_and_update(
+            {"_id": oid},
+            {"$set": {
+                "payout_status": "PAID",
+                "platform_fee": platform_share,
+                "fetcher_paid_amount": fetcher_share
+            }},
+            return_document=ReturnDocument.AFTER,
+        )
+        
+        enriched = await enrich_orders([updated], db, current_user["id"])
+        return OrderPublic(**enriched[0])
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to confirm payout",
+        ) from exc

@@ -286,6 +286,7 @@ export default function RequesterView({ client, user, setMessage }) {
                                         To: <span className="font-medium text-slate-700">{order.dropoff_location}</span>
                                     </p>
 
+
                                     {/* Fetcher Info Display - SHOW CONTACT HERE IF ACCEPTED */}
                                     {order.fetcher_id && (
                                         <div className="mt-4 rounded-xl bg-emerald-50/50 border border-emerald-100 p-3">

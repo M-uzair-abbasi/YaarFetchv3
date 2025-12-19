@@ -142,3 +142,7 @@ class PayoutDetailsSubmission(BaseModel):
     account_title: str = Field(..., max_length=100)
 
 
+class PayoutConfirmation(BaseModel):
+    total_amount: float = Field(..., gt=0)
+
+
