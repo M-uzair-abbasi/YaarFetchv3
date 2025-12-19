@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ReturnDocument
 
 from ..dependencies import get_current_user, get_db
-from ..schemas import OrderCreate, OrderPublic, OrderStatusUpdate
+from ..schemas import OrderCreate, OrderPublic, OrderStatusUpdate, PaymentSubmission, PayoutDetailsSubmission
 from ..utils import object_id_to_str, order_to_public, to_object_id
 
 router = APIRouter()
@@ -227,11 +227,15 @@ async def update_status(
         fetcher_id = object_id_to_str(order["fetcher_id"]) if order.get("fetcher_id") else None
         
         # If the order is accepted, only the fetcher can move it forward.
+        # If the order is accepted, only the fetcher can move it forward.
+        # EXCEPTION: Requester can mark as "delivered" to confirm receipt.
         if current_user["id"] != fetcher_id:
-             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only the assigned fetcher can update the status",
-            )
+            is_requester_confirming = (current_user["id"] == str(order["requester_id"]) and payload.status == "delivered")
+            if not is_requester_confirming:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only the assigned fetcher can update the status (or requester can confirm delivery)",
+                )
 
         updated = await db.orders.find_one_and_update(
             {"_id": oid},
@@ -247,6 +251,94 @@ async def update_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to update order status",
+        ) from exc
+
+
+@router.put("/{order_id}/payment", response_model=OrderPublic)
+async def submit_payment(
+    order_id: str,
+    payload: PaymentSubmission,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        oid = to_object_id(order_id)
+        order = await db.orders.find_one({"_id": oid})
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
+            )
+
+        # Only requester can submit payment
+        if current_user["id"] != str(order["requester_id"]):
+             raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the requester can submit payment",
+            )
+
+        updated = await db.orders.find_one_and_update(
+            {"_id": oid},
+            {"$set": {
+                "payment_sent": True,
+                "txn_id": payload.txn_id,
+                "paid_to_platform": True # Assuming trust for now, or this flags 'review needed'
+            }},
+            return_document=ReturnDocument.AFTER,
+        )
+        
+        enriched = await enrich_orders([updated], db, current_user["id"])
+        return OrderPublic(**enriched[0])
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to submit payment",
+        ) from exc
+
+
+@router.put("/{order_id}/payout-details", response_model=OrderPublic)
+async def submit_payout_details(
+    order_id: str,
+    payload: PayoutDetailsSubmission,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        oid = to_object_id(order_id)
+        order = await db.orders.find_one({"_id": oid})
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
+            )
+
+        # Only fetcher can submit payout details
+        fetcher_id = object_id_to_str(order["fetcher_id"]) if order.get("fetcher_id") else None
+        if current_user["id"] != fetcher_id:
+             raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the assigned fetcher can submit payout details",
+            )
+
+        updated = await db.orders.find_one_and_update(
+            {"_id": oid},
+            {"$set": {
+                "fetcher_bank_name": payload.bank_name,
+                "fetcher_account_number": payload.account_number,
+                "fetcher_account_title": payload.account_title,
+                "payout_status": "PENDING"
+            }},
+            return_document=ReturnDocument.AFTER,
+        )
+        
+        enriched = await enrich_orders([updated], db, current_user["id"])
+        return OrderPublic(**enriched[0])
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to submit payout details",
         ) from exc
 
 

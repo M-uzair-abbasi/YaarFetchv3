@@ -36,6 +36,19 @@ class OrderBase(BaseModel):
     instructions: Optional[str] = Field(None, max_length=500)
     target_offer_id: Optional[str] = None  # New field: link to a specific offer
     target_fetcher_id: Optional[str] = None # New field: link to a specific fetcher
+    
+    # NEW: Manual Payment Fields
+    payment_sent: bool = False
+    txn_id: Optional[str] = None
+    paid_to_platform: bool = False
+    
+    # NEW: Fetcher Payout Fields
+    fetcher_bank_name: Optional[str] = None
+    fetcher_account_number: Optional[str] = None
+    fetcher_account_title: Optional[str] = None
+    payout_status: Optional[str] = "PENDING" # PENDING, PAID
+    platform_fee: Optional[float] = None
+    fetcher_paid_amount: Optional[float] = None
 
 
 class OrderCreate(OrderBase):
@@ -57,6 +70,19 @@ class OrderPublic(OrderBase):
     target_offer_id: Optional[str] = None
     status: str
     created_at: datetime
+    
+    # NEW: Include payment fields in public view
+    payment_sent: bool = False
+    txn_id: Optional[str] = None
+    paid_to_platform: bool = False
+    
+    fetcher_bank_name: Optional[str] = None
+    fetcher_account_number: Optional[str] = None
+    fetcher_account_title: Optional[str] = None
+    payout_status: Optional[str] = None
+    platform_fee: Optional[float] = None
+    fetcher_paid_amount: Optional[float] = None
+    
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -105,4 +131,14 @@ class ChatPublic(BaseModel):
     content: str
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class PaymentSubmission(BaseModel):
+    txn_id: str = Field(..., max_length=100)
+    
+class PayoutDetailsSubmission(BaseModel):
+    bank_name: str = Field(..., max_length=100)
+    account_number: str = Field(..., max_length=50)
+    account_title: str = Field(..., max_length=100)
+
 
