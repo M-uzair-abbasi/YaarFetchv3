@@ -316,10 +316,9 @@ export default function RequesterView({ client, user, setMessage }) {
                                         Please transfer the order amount to YaarFetch Escrow to proceed.
                                         <br />
                                         <span className="font-mono mt-1 block">
-                                            Bank: HBL<br />
-                                            Title: YaarFetch Pvt Ltd<br />
-                                            Acct: 1234-5678-9012-3456<br />
-                                            JazzCash: 0300-1234567
+                                            Bank: jazz cash<br />
+                                            Title: Muhammad Uzair Abbasi<br />
+                                            JazzCash: 03432499245
                                         </span>
                                     </p>
 
