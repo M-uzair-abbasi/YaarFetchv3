@@ -106,6 +106,7 @@ export default function RequesterView({ client, user, setMessage }) {
         } finally {
             setLoading(false);
         }
+    };
     const handleSubmitPayment = async (orderId, txnId) => {
         setLoading(true);
         try {
@@ -126,7 +127,7 @@ export default function RequesterView({ client, user, setMessage }) {
             setMessage("Delivery confirmed", "success");
             fetchMyOrders();
         } catch (err) {
-             setMessage(err.response?.data?.detail || "Unable to confirm delivery", "error");
+            setMessage(err.response?.data?.detail || "Unable to confirm delivery", "error");
         } finally {
             setLoading(false);
         }
@@ -306,27 +307,27 @@ export default function RequesterView({ client, user, setMessage }) {
                                 <StatusPill status={order.status} />
                             </div>
 
-                             {/* PAYMENT SECTION - Show if Accepted */}
-                             {order.status === "accepted" && (
+                            {/* PAYMENT SECTION - Show if Accepted */}
+                            {order.status === "accepted" && (
                                 <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
                                     <h4 className="mb-2 text-sm font-bold text-blue-900">Payment Required</h4>
                                     <p className="mb-4 text-xs text-blue-700">
                                         Please transfer the order amount to YaarFetch Escrow to proceed.
                                         <br />
                                         <span className="font-mono mt-1 block">
-                                            Bank: HBL<br/>
-                                            Title: YaarFetch Pvt Ltd<br/>
-                                            Acct: 1234-5678-9012-3456<br/>
+                                            Bank: HBL<br />
+                                            Title: YaarFetch Pvt Ltd<br />
+                                            Acct: 1234-5678-9012-3456<br />
                                             JazzCash: 0300-1234567
                                         </span>
                                     </p>
-                                    
+
                                     {order.payment_sent ? (
                                         <div className="flex items-center gap-2 rounded-lg bg-green-100 px-3 py-2 text-xs font-bold text-green-800">
                                             <span>✓ Payment Details Sent (Txn: {order.txn_id})</span>
                                         </div>
                                     ) : (
-                                        <form 
+                                        <form
                                             onSubmit={(e) => {
                                                 e.preventDefault();
                                                 const txn = e.target.elements.txn_id.value;
@@ -334,13 +335,13 @@ export default function RequesterView({ client, user, setMessage }) {
                                             }}
                                             className="flex gap-2"
                                         >
-                                            <input 
+                                            <input
                                                 name="txn_id"
                                                 required
                                                 placeholder="Enter Transaction ID / Ref No."
                                                 className="flex-1 rounded-lg border border-blue-200 px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none"
                                             />
-                                            <button 
+                                            <button
                                                 type="submit"
                                                 disabled={loading}
                                                 className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
@@ -355,7 +356,7 @@ export default function RequesterView({ client, user, setMessage }) {
                             {/* DELIVERY CONFIRMATION - Show if Picked Up or Accepted (logic allows flow) */}
                             {(order.status === "picked_up" || order.status === "accepted") && (
                                 <div className="flex justify-end pt-2">
-                                     <button
+                                    <button
                                         onClick={() => handleConfirmDelivery(order.id)}
                                         disabled={loading}
                                         className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
